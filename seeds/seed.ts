@@ -410,7 +410,7 @@ async function seed() {
     await client.query('BEGIN');
 
     // ── Seed admin user ──────────────────────────────────────────────────────
-    const adminEmail = process.env.ADMIN_EMAIL || 'admin@jcsa.co.za';
+    const adminEmail = process.env.ADMIN_EMAIL || 'crucible@metcon.co.za';
     const adminPassword = process.env.ADMIN_INITIAL_PASSWORD || 'admin123';
     const passwordHash = await bcryptjs.hash(adminPassword, 12);
 
