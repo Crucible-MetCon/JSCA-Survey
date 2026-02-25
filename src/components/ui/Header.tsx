@@ -14,12 +14,6 @@ export default function Header() {
             className="h-12 w-auto"
             priority
           />
-          <div>
-            <span className="text-lg font-semibold tracking-tight">JCSA</span>
-            <span className="hidden sm:inline text-sm text-gray-500 ml-2">
-              Quarterly Industry Survey
-            </span>
-          </div>
         </Link>
         <nav className="flex items-center gap-4 text-sm">
           <Link
@@ -33,6 +27,12 @@ export default function Header() {
             className="text-gray-600 hover:text-[#ECB421] transition-colors"
           >
             Results
+          </Link>
+          <Link
+            href="/admin"
+            className="text-gray-600 hover:text-[#ECB421] transition-colors"
+          >
+            Admin
           </Link>
         </nav>
       </div>

@@ -3,6 +3,37 @@ import Image from 'next/image';
 import { SECTOR_LABELS } from '@/types';
 import type { Sector } from '@/types';
 
+const SECTOR_ICONS: Record<Sector, React.ReactNode> = {
+  manufacturers: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
+      <path d="M2 20h20M5 20V8l5-4v16M10 20V4l9 4v12M10 8h1M10 12h1M14 8h1M14 12h1M14 16h1M5 12h1M5 16h1" />
+    </svg>
+  ),
+  retailers: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
+      <path d="M3 9l1-4h16l1 4M3 9v11a1 1 0 001 1h16a1 1 0 001-1V9M3 9h18M9 21V13h6v8" />
+      <circle cx="6.5" cy="9" r="2" /><circle cx="12" cy="9" r="2" /><circle cx="17.5" cy="9" r="2" />
+    </svg>
+  ),
+  wholesalers_importers: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
+      <path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" />
+      <path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12" />
+    </svg>
+  ),
+  diamond_dealers: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
+      <path d="M6 3h12l4 6-10 13L2 9l4-6zM2 9h20M12 22L6 9M12 22l6-13M12 3l-4 6M12 3l4 6" />
+    </svg>
+  ),
+  refiners: (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8">
+      <path d="M12 12c2-2.96 0-7-1-8 0 3.04-4 6.04-4 8a5 5 0 1010 0c0-1.96-1-3-2-4-.5 1.5-1 2-3 4z" />
+      <path d="M8 21h8M10 21v-3a2 2 0 014 0v3" />
+    </svg>
+  ),
+};
+
 const SECTORS: { key: Sector; description: string }[] = [
   { key: 'manufacturers', description: 'Jewellery manufacturers and workshops' },
   { key: 'retailers', description: 'Retail jewellery stores and online sellers' },
@@ -55,6 +86,9 @@ export default function HomePage() {
               href={`/methodology?sector=${key}`}
               className="block bg-white border-2 border-gray-200 rounded-lg p-6 hover:border-[#ECB421] hover:shadow-md transition-all group"
             >
+              <div className="text-[#1B2A4A] group-hover:text-[#ECB421] transition-colors mb-3">
+                {SECTOR_ICONS[key]}
+              </div>
               <h3 className="text-lg font-semibold text-[#1B2A4A] group-hover:text-[#ECB421] transition-colors mb-2">
                 {SECTOR_LABELS[key]}
               </h3>
