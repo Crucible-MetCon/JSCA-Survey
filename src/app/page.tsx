@@ -15,7 +15,7 @@ export default function HomePage() {
   return (
     <div className="bg-[#F5F5F0] min-h-[calc(100vh-140px)]">
       {/* Hero */}
-      <section className="bg-[#1B2A4A] text-white py-16">
+      <section className="bg-[#F5F5F0] text-[#1B2A4A] py-16 border-b border-gray-200">
         <div className="max-w-4xl mx-auto px-4 text-center">
           <Image
             src="/jcsa-logo.svg"
@@ -28,11 +28,11 @@ export default function HomePage() {
           <h1 className="text-3xl sm:text-4xl font-bold mb-4">
             Quarterly Industry Survey
           </h1>
-          <p className="text-lg text-gray-300 max-w-2xl mx-auto mb-2">
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-2">
             Help shape the future of the South African jewellery industry.
             Your anonymous responses provide vital insights for the sector.
           </p>
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-gray-500">
             Estimated time: 10–15 minutes &middot; Fully anonymous &middot; No
             identifying information collected
           </p>
