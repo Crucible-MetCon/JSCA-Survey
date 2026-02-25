@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
 import DashboardFiltersBar from '@/components/admin/DashboardFilters';
 import MarkdownRenderer from '@/components/admin/MarkdownRenderer';
 import type { DashboardFilters } from '@/types';
@@ -93,7 +92,6 @@ export default function AISummaryPage() {
   };
 
   return (
-    <AdminLayout>
       <div className="max-w-4xl">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-[#1B2A4A] mb-1">AI Executive Summary</h1>
@@ -171,6 +169,5 @@ export default function AISummaryPage() {
           </div>
         )}
       </div>
-    </AdminLayout>
   );
 }
