@@ -50,8 +50,8 @@ async function generateSampleData() {
 
       console.log(`${survey.title}: ${questions.rows.length} questions`);
 
-      // Generate 10 submissions
-      for (let i = 0; i < 10; i++) {
+      // Generate 30 submissions
+      for (let i = 0; i < 30; i++) {
         await client.query('BEGIN');
 
         const sizeBand = pickWeighted(SIZE_BANDS, [3, 4, 2, 1, 0.5]);
@@ -169,7 +169,7 @@ async function generateSampleData() {
         totalSubmissions++;
       }
 
-      console.log(`  -> 10 submissions created for ${survey.sector}`);
+      console.log(`  -> 30 submissions created for ${survey.sector}`);
     }
 
     console.log(`\nDone! ${totalSubmissions} total sample submissions created.`);
