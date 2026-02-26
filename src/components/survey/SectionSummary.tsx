@@ -10,6 +10,9 @@ interface SectionSummaryProps {
   questions: Question[];
   answers: SurveyAnswers;
   sectionId: string;
+  startedAt: number;
+  sectionsCompleted: number;
+  totalSections: number;
 }
 
 // Cache summaries by section ID so revisiting doesn't re-generate
@@ -21,6 +24,9 @@ export default function SectionSummary({
   questions,
   answers,
   sectionId,
+  startedAt,
+  sectionsCompleted,
+  totalSections,
 }: SectionSummaryProps) {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
@@ -64,11 +70,14 @@ export default function SectionSummary({
         options: q.options || undefined,
       }));
 
+      const elapsedMinutes = Math.round((Date.now() - startedAt) / 60000);
+
       const res = await fetch('/api/survey/summarise', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           section: { title: sectionTitle, pillar, questions: questionData },
+          timing: { elapsedMinutes, sectionsCompleted, totalSections },
         }),
         signal: controller.signal,
       });
@@ -121,7 +130,7 @@ export default function SectionSummary({
       setLoading(false);
       abortRef.current = null;
     }
-  }, [sectionId, sectionTitle, pillar, answeredQuestions, answers, answerKey]);
+  }, [sectionId, sectionTitle, pillar, answeredQuestions, answers, answerKey, startedAt, sectionsCompleted, totalSections]);
 
   // Auto-trigger when there are answers
   useEffect(() => {

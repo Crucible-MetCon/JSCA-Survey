@@ -12,6 +12,7 @@ interface SubmissionReviewProps {
   answers: SurveyAnswers;
   sector: Sector;
   branchingResult: BranchingResult;
+  startedAt: number;
   onBack: () => void;
   onSubmit: () => void;
   submitting: boolean;
@@ -22,6 +23,7 @@ export default function SubmissionReview({
   answers,
   sector,
   branchingResult,
+  startedAt,
   onBack,
   onSubmit,
   submitting,
@@ -62,11 +64,14 @@ export default function SubmissionReview({
         };
       });
 
+      const elapsedMinutes = Math.round((Date.now() - startedAt) / 60000);
+
       const res = await fetch('/api/survey/summarise', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           full: { sector: SECTOR_LABELS[sector], sections },
+          timing: { elapsedMinutes, sectionsCompleted: visibleSections.length, totalSections: visibleSections.length },
         }),
         signal: controller.signal,
       });
@@ -116,7 +121,7 @@ export default function SubmissionReview({
       setLoading(false);
       abortRef.current = null;
     }
-  }, [survey, answers, sector, branchingResult]);
+  }, [survey, answers, sector, branchingResult, startedAt]);
 
   // Auto-generate on mount
   useEffect(() => {

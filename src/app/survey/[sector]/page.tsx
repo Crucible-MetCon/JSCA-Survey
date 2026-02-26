@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import QuestionRenderer from '@/components/survey/QuestionRenderer';
 import SectionSummary from '@/components/survey/SectionSummary';
@@ -24,6 +24,7 @@ export default function SurveyPage() {
   const [submitting, setSubmitting] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const startedAtRef = useRef<number>(Date.now());
 
   const storageKey = STORAGE_KEY_PREFIX + sector;
 
@@ -57,6 +58,7 @@ export default function SurveyPage() {
               const parsed = JSON.parse(saved);
               setAnswers(parsed.answers || {});
               setCurrentSectionIndex(parsed.sectionIndex || 0);
+              if (parsed.startedAt) startedAtRef.current = parsed.startedAt;
             } catch {
               // Ignore corrupt data
             }
@@ -77,7 +79,7 @@ export default function SurveyPage() {
       if (typeof window !== 'undefined') {
         localStorage.setItem(
           storageKey,
-          JSON.stringify({ answers: newAnswers, sectionIndex: sectionIdx })
+          JSON.stringify({ answers: newAnswers, sectionIndex: sectionIdx, startedAt: startedAtRef.current })
         );
       }
     },
@@ -236,6 +238,7 @@ export default function SurveyPage() {
             answers={answers}
             sector={sector}
             branchingResult={branchingResult}
+            startedAt={startedAtRef.current}
             onBack={() => {
               setShowReview(false);
               window.scrollTo(0, 0);
@@ -293,6 +296,9 @@ export default function SurveyPage() {
                 pillar={currentSection.pillar}
                 questions={visibleQuestions}
                 answers={answers}
+                startedAt={startedAtRef.current}
+                sectionsCompleted={currentSectionIndex}
+                totalSections={visibleSections.length}
               />
             </div>
           </>

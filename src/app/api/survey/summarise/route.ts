@@ -19,6 +19,12 @@ interface FullPayload {
   sections: SectionPayload[];
 }
 
+interface TimingPayload {
+  elapsedMinutes: number;
+  sectionsCompleted: number;
+  totalSections: number;
+}
+
 export async function POST(request: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
@@ -28,7 +34,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  let body: { section?: SectionPayload; full?: FullPayload };
+  let body: { section?: SectionPayload; full?: FullPayload; timing?: TimingPayload };
   try {
     body = await request.json();
   } catch {
@@ -39,9 +45,10 @@ export async function POST(request: NextRequest) {
   }
 
   const isFullMode = !!body.full;
+  const timing = body.timing;
   const prompt = isFullMode
-    ? buildFullPrompt(body.full!)
-    : buildSectionPrompt(body.section!);
+    ? buildFullPrompt(body.full!, timing)
+    : buildSectionPrompt(body.section!, timing);
 
   if (!prompt) {
     return new Response(JSON.stringify({ error: 'No data to summarise' }), {
@@ -51,8 +58,8 @@ export async function POST(request: NextRequest) {
   }
 
   const systemPrompt = isFullMode
-    ? `You are a friendly survey assistant for the Jewellery Council of South Africa (JCSA). Write a clear, conversational summary of the respondent's complete survey submission. Structure it with a brief intro, then a short paragraph per section. Use plain language. Highlight any notable patterns. Keep it under 300 words. Do not use markdown headings — use bold text for section names instead. Address the respondent as "you".`
-    : `You are a friendly survey assistant for the Jewellery Council of South Africa (JCSA). Write 2-3 sentences summarising what the respondent answered in this survey section. Be conversational and use plain language. Do not use markdown headings. Address the respondent as "you".`;
+    ? `You are a friendly survey assistant for the Jewellery Council of South Africa (JCSA). Write a clear, conversational summary of the respondent's complete survey submission. Structure it with a brief intro (mention time taken), then a short paragraph per section. Use plain language. Highlight any notable patterns. Keep it under 300 words. Do not use markdown headings — use bold text for section names instead. Address the respondent as "you". If timing information is provided, mention how long they spent on the survey at the start.`
+    : `You are a friendly survey assistant for the Jewellery Council of South Africa (JCSA). Write 2-3 sentences summarising what the respondent answered in this survey section. Be conversational and use plain language. Do not use markdown headings. Address the respondent as "you". If timing information is provided, end with a brief note about time spent so far and estimated time remaining for the rest of the survey.`;
 
   try {
     const anthropic = new Anthropic({ apiKey });
@@ -148,7 +155,23 @@ function formatAnswer(q: QuestionSummary): string {
   return String(q.answer);
 }
 
-function buildSectionPrompt(section: SectionPayload): string | null {
+function buildTimingContext(timing?: TimingPayload): string {
+  if (!timing) return '';
+
+  const { elapsedMinutes, sectionsCompleted, totalSections } = timing;
+  const remaining = totalSections - sectionsCompleted;
+  const avgPerSection = sectionsCompleted > 0 ? elapsedMinutes / sectionsCompleted : 0;
+  const estimatedRemaining = Math.round(avgPerSection * remaining);
+
+  let text = `\nTiming: The respondent has spent ${elapsedMinutes} minute${elapsedMinutes !== 1 ? 's' : ''} on the survey so far.`;
+  text += ` They have completed ${sectionsCompleted} of ${totalSections} sections.`;
+  if (remaining > 0 && avgPerSection > 0) {
+    text += ` At the current pace, the remaining ${remaining} section${remaining !== 1 ? 's' : ''} should take approximately ${estimatedRemaining} minute${estimatedRemaining !== 1 ? 's' : ''}.`;
+  }
+  return text;
+}
+
+function buildSectionPrompt(section: SectionPayload, timing?: TimingPayload): string | null {
   if (!section || !section.questions || section.questions.length === 0) return null;
 
   const answered = section.questions.filter((q) => q.answer !== null && q.answer !== undefined);
@@ -159,10 +182,12 @@ function buildSectionPrompt(section: SectionPayload): string | null {
     prompt += `- ${q.text}: ${formatAnswer(q)}\n`;
   }
 
+  prompt += buildTimingContext(timing);
+
   return prompt;
 }
 
-function buildFullPrompt(full: FullPayload): string | null {
+function buildFullPrompt(full: FullPayload, timing?: TimingPayload): string | null {
   if (!full || !full.sections || full.sections.length === 0) return null;
 
   let prompt = `Complete survey submission for the ${full.sector} sector.\n\n`;
@@ -177,6 +202,8 @@ function buildFullPrompt(full: FullPayload): string | null {
     }
     prompt += '\n';
   }
+
+  prompt += buildTimingContext(timing);
 
   return prompt;
 }
