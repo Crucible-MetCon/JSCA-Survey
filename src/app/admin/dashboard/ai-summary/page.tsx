@@ -10,6 +10,7 @@ export default function AISummaryPage() {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
 
   const generateSummary = useCallback(async () => {
@@ -91,6 +92,32 @@ export default function AISummaryPage() {
     }
   };
 
+  const handleExportPDF = async () => {
+    setExporting(true);
+    try {
+      const res = await fetch('/api/admin/summary/export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Export failed');
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'JCSA-AI-Executive-Summary.pdf';
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Export failed');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
       <div className="max-w-4xl">
         <div className="mb-6">
@@ -122,6 +149,19 @@ export default function AISummaryPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
               Cancel
+            </button>
+          )}
+
+          {content && !loading && (
+            <button
+              onClick={handleExportPDF}
+              disabled={exporting}
+              className="px-5 py-2.5 bg-[#ECB421] text-[#1B2A4A] rounded-lg text-sm font-medium hover:bg-[#d4a31e] transition-colors flex items-center gap-2 disabled:opacity-50"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              {exporting ? 'Exporting...' : 'Export PDF'}
             </button>
           )}
         </div>
