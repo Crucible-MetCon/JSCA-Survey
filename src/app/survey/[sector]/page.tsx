@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import QuestionRenderer from '@/components/survey/QuestionRenderer';
+import SectionSummary from '@/components/survey/SectionSummary';
+import SubmissionReview from '@/components/survey/SubmissionReview';
 import SurveyHelper from '@/components/survey/SurveyHelper';
 import { evaluateBranchingRules, isSectionVisible, isQuestionVisible } from '@/lib/branching';
 import { SECTOR_LABELS, PILLAR_LABELS } from '@/types';
@@ -20,6 +22,7 @@ export default function SurveyPage() {
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showReview, setShowReview] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const storageKey = STORAGE_KEY_PREFIX + sector;
@@ -204,61 +207,96 @@ export default function SurveyPage() {
         <div className="mb-8">
           <div className="flex justify-between text-xs text-gray-500 mb-2">
             <span>
-              Section {currentSectionIndex + 1} of {visibleSections.length}
+              {showReview
+                ? 'Review'
+                : `Section ${currentSectionIndex + 1} of ${visibleSections.length}`}
             </span>
-            <span>{PILLAR_LABELS[currentSection.pillar as Pillar]}</span>
+            <span>
+              {showReview
+                ? 'Final Review'
+                : PILLAR_LABELS[currentSection.pillar as Pillar]}
+            </span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
               className="bg-[#ECB421] h-2 rounded-full transition-all duration-300"
               style={{
-                width: `${((currentSectionIndex + 1) / visibleSections.length) * 100}%`,
+                width: showReview
+                  ? '100%'
+                  : `${((currentSectionIndex + 1) / visibleSections.length) * 100}%`,
               }}
             />
           </div>
         </div>
 
-        {/* Section content */}
-        <div className="bg-white rounded-lg border border-gray-200 p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-[#1B2A4A] mb-2">
-            {currentSection.title}
-          </h2>
-          {currentSection.description && (
-            <p className="text-sm text-gray-600 mb-6">{currentSection.description}</p>
-          )}
+        {showReview ? (
+          /* Review step */
+          <SubmissionReview
+            survey={survey}
+            answers={answers}
+            sector={sector}
+            branchingResult={branchingResult}
+            onBack={() => {
+              setShowReview(false);
+              window.scrollTo(0, 0);
+            }}
+            onSubmit={handleSubmit}
+            submitting={submitting}
+          />
+        ) : (
+          <>
+            {/* Section content */}
+            <div className="bg-white rounded-lg border border-gray-200 p-6 sm:p-8">
+              <h2 className="text-xl font-semibold text-[#1B2A4A] mb-2">
+                {currentSection.title}
+              </h2>
+              {currentSection.description && (
+                <p className="text-sm text-gray-600 mb-6">{currentSection.description}</p>
+              )}
 
-          {sectionExplanation && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-blue-800">{sectionExplanation}</p>
-            </div>
-          )}
-
-          <div className="space-y-8">
-            {visibleQuestions.map((question, idx) => {
-              const questionExplanation = branchingResult.explanations.get(question.id);
-              return (
-                <div key={question.id}>
-                  <label className="block text-sm font-medium text-[#1B2A4A] mb-3">
-                    {idx + 1}. {question.question_text}
-                    {question.is_required && (
-                      <span className="text-red-500 ml-1">*</span>
-                    )}
-                  </label>
-                  {questionExplanation && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
-                      <p className="text-xs text-blue-800">{questionExplanation}</p>
-                    </div>
-                  )}
-                  <QuestionRenderer
-                    question={question}
-                    value={answers[question.id]}
-                    onChange={handleAnswerChange}
-                  />
+              {sectionExplanation && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <p className="text-sm text-blue-800">{sectionExplanation}</p>
                 </div>
-              );
-            })}
-          </div>
-        </div>
+              )}
+
+              <div className="space-y-8">
+                {visibleQuestions.map((question, idx) => {
+                  const questionExplanation = branchingResult.explanations.get(question.id);
+                  return (
+                    <div key={question.id}>
+                      <label className="block text-sm font-medium text-[#1B2A4A] mb-3">
+                        {idx + 1}. {question.question_text}
+                        {question.is_required && (
+                          <span className="text-red-500 ml-1">*</span>
+                        )}
+                      </label>
+                      {questionExplanation && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3">
+                          <p className="text-xs text-blue-800">{questionExplanation}</p>
+                        </div>
+                      )}
+                      <QuestionRenderer
+                        question={question}
+                        value={answers[question.id]}
+                        onChange={handleAnswerChange}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* AI Section Summary */}
+              <SectionSummary
+                sectionId={currentSection.id}
+                sectionTitle={currentSection.title}
+                pillar={currentSection.pillar}
+                questions={visibleQuestions}
+                answers={answers}
+              />
+            </div>
+          </>
+        )}
 
         {/* Error message */}
         {error && (
@@ -267,69 +305,75 @@ export default function SurveyPage() {
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="flex justify-between mt-6">
-          <button
-            onClick={() => {
-              const newIdx = currentSectionIndex - 1;
-              setCurrentSectionIndex(newIdx);
-              saveProgress(answers, newIdx);
-              window.scrollTo(0, 0);
-            }}
-            disabled={isFirstSection}
-            className={`px-6 py-3 rounded-lg font-medium text-sm transition-colors ${
-              isFirstSection
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-white border border-gray-300 text-[#1B2A4A] hover:border-[#ECB421]'
-            }`}
-          >
-            Previous
-          </button>
+        {/* Navigation (hidden during review — review has its own buttons) */}
+        {!showReview && (
+          <>
+            <div className="flex justify-between mt-6">
+              <button
+                onClick={() => {
+                  const newIdx = currentSectionIndex - 1;
+                  setCurrentSectionIndex(newIdx);
+                  saveProgress(answers, newIdx);
+                  window.scrollTo(0, 0);
+                }}
+                disabled={isFirstSection}
+                className={`px-6 py-3 rounded-lg font-medium text-sm transition-colors ${
+                  isFirstSection
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-white border border-gray-300 text-[#1B2A4A] hover:border-[#ECB421]'
+                }`}
+              >
+                Previous
+              </button>
 
-          {isLastSection ? (
-            <button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="px-8 py-3 rounded-lg font-semibold text-sm bg-[#ECB421] text-[#1B2A4A] hover:bg-[#d9a31e] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? 'Submitting...' : 'Submit Survey'}
-            </button>
-          ) : (
-            <button
-              onClick={() => {
-                const newIdx = currentSectionIndex + 1;
-                setCurrentSectionIndex(newIdx);
-                saveProgress(answers, newIdx);
-                window.scrollTo(0, 0);
-              }}
-              className="px-6 py-3 rounded-lg font-medium text-sm bg-[#1B2A4A] text-white hover:bg-[#2a3d5e] transition-colors"
-            >
-              Next Section
-            </button>
-          )}
-        </div>
+              {isLastSection ? (
+                <button
+                  onClick={() => {
+                    setShowReview(true);
+                    window.scrollTo(0, 0);
+                  }}
+                  className="px-8 py-3 rounded-lg font-semibold text-sm bg-[#ECB421] text-[#1B2A4A] hover:bg-[#d9a31e] transition-colors"
+                >
+                  Review &amp; Submit
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    const newIdx = currentSectionIndex + 1;
+                    setCurrentSectionIndex(newIdx);
+                    saveProgress(answers, newIdx);
+                    window.scrollTo(0, 0);
+                  }}
+                  className="px-6 py-3 rounded-lg font-medium text-sm bg-[#1B2A4A] text-white hover:bg-[#2a3d5e] transition-colors"
+                >
+                  Next Section
+                </button>
+              )}
+            </div>
 
-        {/* Section navigation dots */}
-        <div className="flex justify-center gap-2 mt-6">
-          {visibleSections.map((section, idx) => (
-            <button
-              key={section.id}
-              onClick={() => {
-                setCurrentSectionIndex(idx);
-                saveProgress(answers, idx);
-                window.scrollTo(0, 0);
-              }}
-              className={`w-3 h-3 rounded-full transition-colors ${
-                idx === currentSectionIndex
-                  ? 'bg-[#ECB421]'
-                  : idx < currentSectionIndex
-                    ? 'bg-[#1B2A4A]'
-                    : 'bg-gray-300'
-              }`}
-              aria-label={`Go to section ${idx + 1}: ${section.title}`}
-            />
-          ))}
-        </div>
+            {/* Section navigation dots */}
+            <div className="flex justify-center gap-2 mt-6">
+              {visibleSections.map((section, idx) => (
+                <button
+                  key={section.id}
+                  onClick={() => {
+                    setCurrentSectionIndex(idx);
+                    saveProgress(answers, idx);
+                    window.scrollTo(0, 0);
+                  }}
+                  className={`w-3 h-3 rounded-full transition-colors ${
+                    idx === currentSectionIndex
+                      ? 'bg-[#ECB421]'
+                      : idx < currentSectionIndex
+                        ? 'bg-[#1B2A4A]'
+                        : 'bg-gray-300'
+                  }`}
+                  aria-label={`Go to section ${idx + 1}: ${section.title}`}
+                />
+              ))}
+            </div>
+          </>
+        )}
       </div>
 
       <SurveyHelper />
